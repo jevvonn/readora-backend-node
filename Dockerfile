@@ -1,27 +1,36 @@
-FROM node:20-alpine AS base
+# Gunakan image Python sebagai base
+FROM python:3.9.21-alpine3.21 AS base
 
+# Stage untuk build dependencies
 FROM base AS builder
 
-RUN apk add --no-cache gcompat
+RUN apk add --no-cache \
+    gcompat \
+    nodejs \
+    npm \
+    pkgconfig \
+    pixman-dev \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    librsvg-dev \
+    build-base
+
 WORKDIR /app
 
-COPY package*json tsconfig.json src ./
+# Salin file package.json dan tsconfig.json lebih dulu untuk memanfaatkan caching
+COPY package*.json tsconfig.json ./
+COPY src ./src
+COPY .env .env
 
-RUN npm ci && \
-    npm run build && \
-    npm prune --production
+# Install dependencies dan build aplikasi
+RUN npm install && npm run build
 
-FROM base AS runner
-WORKDIR /app
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 hono
-
-COPY --from=builder --chown=hono:nodejs /app/node_modules /app/node_modules
-COPY --from=builder --chown=hono:nodejs /app/dist /app/dist
-COPY --from=builder --chown=hono:nodejs /app/package.json /app/package.json
-
-USER hono
+# Ekspos port aplikasi
 EXPOSE 3001
 
+# Perintah untuk menjalankan aplikasi
 CMD ["node", "/app/dist/index.js"]
+
+

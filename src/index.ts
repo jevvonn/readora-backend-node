@@ -136,10 +136,17 @@ app.post("/service/books/parse", async (c) => {
   }
 });
 
+let host = "localhost";
+
+if (process.env.APP_ENV && process.env.APP_ENV === "production") {
+  host = "0.0.0.0";
+}
+
 // Start server
 serve(
   {
     fetch: app.fetch,
+    hostname: host,
     port: Number(process.env.APP_PORT) || 3001,
   },
   (info) => {
