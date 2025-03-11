@@ -137,7 +137,6 @@ app.post("/service/books/parse", async (c) => {
 });
 
 let host = "localhost";
-
 if (process.env.APP_ENV && process.env.APP_ENV === "production") {
   host = "0.0.0.0";
 }
@@ -150,6 +149,6 @@ serve(
     port: Number(process.env.APP_PORT) || 3001,
   },
   (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
+    console.log(`Server is running on http://${info.address}:${info.port}`);
   }
 );

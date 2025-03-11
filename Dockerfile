@@ -1,13 +1,6 @@
-# Gunakan image Python sebagai base
-FROM python:3.9.21-alpine3.21 AS base
-
-# Stage untuk build dependencies
-FROM base AS builder
+FROM node:20-alpine AS builder
 
 RUN apk add --no-cache \
-    gcompat \
-    nodejs \
-    npm \
     pkgconfig \
     pixman-dev \
     cairo-dev \
@@ -19,18 +12,32 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Salin file package.json dan tsconfig.json lebih dulu untuk memanfaatkan caching
 COPY package*.json tsconfig.json ./
+RUN npm install
+
 COPY src ./src
 COPY .env .env
 
-# Install dependencies dan build aplikasi
-RUN npm install && npm run build
+RUN npm run build
 
-# Ekspos port aplikasi
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+RUN apk add --no-cache \
+    pixman \
+    cairo \
+    pango \
+    jpeg \
+    giflib \
+    librsvg
+
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/package.json /app/package.json
+COPY .env .env
+
 EXPOSE 3001
 
-# Perintah untuk menjalankan aplikasi
+# Start the application
 CMD ["node", "/app/dist/index.js"]
-
-
